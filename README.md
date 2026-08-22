@@ -159,6 +159,19 @@ Deferred:
 - ByteTrack for multi-object tracking
 - SQLite for the MVP; PostgreSQL only if multi-user or long-term analytics is needed
 
+## Run locally
+
+```bash
+cd traffic_monitoring_request
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/streamlit run app.py
+```
+
+Open the local URL printed by Streamlit, choose `demo-intersection`, upload a short CCTV clip, and select **Analyze traffic**. The first analysis downloads the small YOLO model to the local machine; subsequent analyses reuse it.
+
+The current MVP uses a compact IoU tracker designed for sampled on-demand video. Replace it with ByteTrack during the multi-camera validation phase if traffic density or occlusions make track continuity insufficient.
+
 ## Success criteria
 
 - A user can analyze a configured camera without command-line steps.
@@ -171,4 +184,3 @@ Deferred:
 - [Architecture details](docs/architecture.md)
 - [Camera calibration guide](docs/camera-calibration.md)
 - [Data, privacy, and feed-access notes](docs/data-governance.md)
-
