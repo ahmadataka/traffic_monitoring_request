@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Local application data
+data/
+results/
+models/
+*.mp4
+*.mkv
+*.avi
+
+# macOS
+.DS_Store
+
+# Secrets and local configuration
+.env
+config/local.*
