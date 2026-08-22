@@ -129,9 +129,9 @@ def main() -> None:
         st.image(result.annotated_frame, caption="Representative analyzed frame", channels="BGR", use_container_width=True)
     with right:
         st.metric("Traffic condition", result.traffic_condition.title())
-        st.metric("Total vehicles", result.total_vehicles)
+        st.metric("Observed vehicles", result.total_vehicles)
         st.metric("Road occupancy", f"{result.occupancy_percent:.0f}%")
-        st.metric("Directional crossings", result.directional_crossings)
+        st.metric("Line crossings", result.directional_crossings)
 
     st.subheader("Vehicle counts")
     st.dataframe(result.count_table, use_container_width=True, hide_index=True)

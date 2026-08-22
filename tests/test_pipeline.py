@@ -10,6 +10,13 @@ def test_tracker_preserves_id_for_matching_vehicle():
     assert first[0].id == second[0].id
 
 
+def test_tracker_preserves_id_when_a_vehicle_moves_between_sampled_frames():
+    tracker = IoUTracker(max_center_distance=120)
+    first = tracker.update([("car", np.array([10, 10, 50, 50]))])
+    second = tracker.update([("car", np.array([80, 10, 120, 50]))])
+    assert first[0].id == second[0].id
+
+
 def test_line_crossing_detects_side_change():
     track = Track(1, "car", np.array([0, 0, 10, 10]), center=(20, 50), previous_center=(20, 10))
     assert _crossed_line(track, (0, 30, 100, 30))

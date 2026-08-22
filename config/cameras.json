@@ -5,5 +5,12 @@
     "source_url": null,
     "count_line": [120, 360, 840, 360],
     "analysis_width": 960
+  },
+  {
+    "id": "jogjakota-simpang-mirota-barat",
+    "name": "Simpang Mirota View Barat (Kota Yogyakarta public CCTV)",
+    "source_url": "https://cctvjss.jogjakota.go.id/atcs/ATCS_Simpang_Mirota_View_Barat.stream/playlist.m3u8",
+    "count_line": [80, 360, 620, 360],
+    "analysis_width": 704
   }
 ]

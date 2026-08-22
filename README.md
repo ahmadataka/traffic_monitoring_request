@@ -14,7 +14,7 @@ The first version runs on a local Apple Silicon Mac. It analyzes a short video w
 
 - Analyze one selected fixed CCTV camera on demand.
 - Detect and classify `motorcycle`, `car`, `bus`, and `truck`.
-- Count vehicles by lane and direction.
+- Count observed vehicles by class and line-crossing flow.
 - Estimate traffic condition as `lancar`, `sedang`, `padat`, or `macet`.
 - Estimate speed only for cameras that have completed a one-time road calibration.
 - Return one representative annotated screenshot and a concise report.
@@ -35,12 +35,11 @@ Example result:
 | --- | --- |
 | Traffic condition | Padat |
 | Analysis window | 3 minutes |
-| Total vehicles | 186 |
+| Observed vehicles | 186 |
 | Motorcycles | 112 |
 | Cars | 58 |
 | Buses and trucks | 16 |
-| Direction A -> B | 103 |
-| Direction B -> A | 83 |
+| Line crossings | 103 |
 | Estimated average speed | 22 km/h (calibrated cameras only) |
 | Road occupancy | 68% |
 
@@ -169,6 +168,10 @@ python3 -m venv .venv
 ```
 
 Open the local URL printed by Streamlit, choose `demo-intersection`, upload a short CCTV clip, and select **Analyze traffic**. The first analysis downloads the small YOLO model to the local machine; subsequent analyses reuse it.
+
+On Apple Silicon, the analyzer automatically uses the MPS accelerator when macOS makes it available. It otherwise falls back to CPU without changing the user workflow.
+
+For immediate live testing, choose `jogjakota-simpang-mirota-barat`. This is a fixed-view, public HLS feed shown by the official [Kota Yogyakarta CCTV viewer](https://cctv.jogjakota.go.id/), verified on 22 August 2026. The default counting line is only a starting point and must be visually adjusted after the first result. Do not use the source for redistributing footage, and re-check the public portal's access terms before any operational or commercial deployment.
 
 The current MVP uses a compact IoU tracker designed for sampled on-demand video. Replace it with ByteTrack during the multi-camera validation phase if traffic density or occlusions make track continuity insufficient.
 

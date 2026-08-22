@@ -8,6 +8,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 import pandas as pd
+import torch
 from ultralytics import YOLO
 
 from traffic_monitoring.config import CameraConfig
@@ -21,7 +22,7 @@ class AnalysisOptions:
     duration_seconds: int = 180
     sample_fps: int = 1
     confidence: float = 0.35
-    model_name: str = "yolo11n.pt"
+    model_name: str = "models/yolo11n.pt"
 
 
 @dataclass
@@ -41,9 +42,10 @@ class IoUTracker:
     ByteTrack can replace this adapter later without changing the pipeline API.
     """
 
-    def __init__(self, max_missed_frames: int = 3, min_iou: float = 0.2):
+    def __init__(self, max_missed_frames: int = 3, min_iou: float = 0.2, max_center_distance: float = 120.0):
         self.max_missed_frames = max_missed_frames
         self.min_iou = min_iou
+        self.max_center_distance = max_center_distance
         self.next_id = 1
         self.tracks: dict[int, Track] = {}
 
@@ -57,6 +59,10 @@ class IoUTracker:
         union = (left[2] - left[0]) * (left[3] - left[1]) + (right[2] - right[0]) * (right[3] - right[1]) - intersection
         return intersection / union if union else 0.0
 
+    @staticmethod
+    def _center_distance(left: tuple[int, int], right: tuple[int, int]) -> float:
+        return float(np.hypot(left[0] - right[0], left[1] - right[1]))
+
     def update(self, detections: list[tuple[str, np.ndarray]]) -> list[Track]:
         unmatched_track_ids = set(self.tracks)
         unmatched_detections = set(range(len(detections)))
@@ -64,10 +70,15 @@ class IoUTracker:
         for track_id, track in self.tracks.items():
             for index, (class_name, box) in enumerate(detections):
                 if class_name == track.class_name:
-                    candidates.append((self._iou(track.box, box), track_id, index))
+                    iou = self._iou(track.box, box)
+                    distance = self._center_distance(track.center, _center(box))
+                    if iou >= self.min_iou or distance <= self.max_center_distance:
+                        # At 1 FPS, a moving vehicle may no longer overlap its previous box.
+                        score = iou + 0.5 * (1 - min(distance / self.max_center_distance, 1))
+                        candidates.append((score, track_id, index))
 
         for score, track_id, index in sorted(candidates, reverse=True):
-            if score < self.min_iou or track_id not in unmatched_track_ids or index not in unmatched_detections:
+            if track_id not in unmatched_track_ids or index not in unmatched_detections:
                 continue
             track = self.tracks[track_id]
             box = detections[index][1]
@@ -154,9 +165,13 @@ def analyze_video(source: str | Path, camera: CameraConfig, options: AnalysisOpt
     source_fps = capture.get(cv2.CAP_PROP_FPS) or 25
     frame_step = max(1, int(source_fps / options.sample_fps))
     maximum_frames = options.duration_seconds * options.sample_fps
-    model = YOLO(options.model_name)
+    model_path = Path(options.model_name)
+    model_path.parent.mkdir(parents=True, exist_ok=True)
+    model = YOLO(str(model_path))
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
     tracker = IoUTracker()
-    class_counts: Counter[str] = Counter()
+    observed_classes: dict[int, str] = {}
+    crossing_count = 0
     occupancy_samples: list[float] = []
     sampled_frames = 0
     frame_index = 0
@@ -172,7 +187,7 @@ def analyze_video(source: str | Path, camera: CameraConfig, options: AnalysisOpt
             continue
         frame_index += 1
         frame = _resize(frame, camera.analysis_width)
-        prediction = model(frame, conf=options.confidence, verbose=False)[0]
+        prediction = model(frame, conf=options.confidence, verbose=False, device=device)[0]
         detections: list[tuple[str, np.ndarray]] = []
         if prediction.boxes is not None:
             for box, class_id in zip(prediction.boxes.xyxy.cpu().numpy(), prediction.boxes.cls.cpu().numpy().astype(int)):
@@ -180,12 +195,14 @@ def analyze_video(source: str | Path, camera: CameraConfig, options: AnalysisOpt
                     detections.append((VEHICLE_CLASSES[class_id], box.astype(int)))
 
         tracks = tracker.update(detections)
+        for track in tracks:
+            observed_classes.setdefault(track.id, track.class_name)
         occupied_area = sum(max(0, track.box[2] - track.box[0]) * max(0, track.box[3] - track.box[1]) for track in tracks)
         occupancy_samples.append(min(100.0, occupied_area / (frame.shape[0] * frame.shape[1]) * 100))
         for track in tracks:
             if not track.counted and _crossed_line(track, camera.count_line):
                 track.counted = True
-                class_counts[track.class_name] += 1
+                crossing_count += 1
         sampled_frames += 1
         if representative_frame is None or len(tracks) >= len(representative_tracks):
             representative_frame = frame.copy()
@@ -203,15 +220,16 @@ def analyze_video(source: str | Path, camera: CameraConfig, options: AnalysisOpt
         cv2.rectangle(annotated, (left, top), (right, bottom), (0, 220, 0), 2)
         cv2.putText(annotated, f"{track.class_name} #{track.id}", (left, max(20, top - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 220, 0), 2)
 
+    class_counts = Counter(observed_classes.values())
     total = sum(class_counts.values())
     occupancy = float(np.mean(occupancy_samples)) if occupancy_samples else 0.0
     return AnalysisResult(
         camera_id=camera.id,
         sampled_frames=sampled_frames,
         total_vehicles=total,
-        directional_crossings=total,
+        directional_crossings=crossing_count,
         occupancy_percent=occupancy,
-        traffic_condition=_traffic_condition(total, occupancy, options.duration_seconds),
+        traffic_condition=_traffic_condition(crossing_count, occupancy, options.duration_seconds),
         class_counts=dict(class_counts),
         annotated_frame=annotated,
     )
