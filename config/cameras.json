@@ -1,16 +1,37 @@
 [
   {
-    "id": "demo-intersection",
-    "name": "Demo Intersection",
-    "source_url": null,
-    "count_line": [120, 360, 840, 360],
-    "analysis_width": 960
-  },
-  {
     "id": "jogjakota-simpang-mirota-barat",
     "name": "Simpang Mirota View Barat (Kota Yogyakarta public CCTV)",
     "source_url": "https://cctvjss.jogjakota.go.id/atcs/ATCS_Simpang_Mirota_View_Barat.stream/playlist.m3u8",
     "count_line": [80, 360, 620, 360],
     "analysis_width": 704
+  },
+  {
+    "id": "jogjakota-simpang-gramedia-utara-timur",
+    "name": "Simpang Gramedia, North-East View",
+    "source_url": "https://cctvjss.jogjakota.go.id/atcs/ATCS_gramedia.stream/playlist.m3u8",
+    "count_line": [60, 350, 900, 350],
+    "analysis_width": 960
+  },
+  {
+    "id": "jogjakota-simpang-demangan-timur",
+    "name": "Simpang Demangan, East View",
+    "source_url": "https://cctvjss.jogjakota.go.id/atcs/ATCS_Simpang_Demangan_View_Timur.stream/playlist.m3u8",
+    "count_line": [60, 350, 900, 350],
+    "analysis_width": 960
+  },
+  {
+    "id": "jogjakota-simpang-suprapto-kst-utara",
+    "name": "Simpang Letjen Suprapto - KS Tubun, North View",
+    "source_url": "https://cctvjss.jogjakota.go.id/atcs/ATCS_Simpang_Letjen_Suprapto_KS_Tubun_View_Utara.stream/playlist.m3u8",
+    "count_line": [60, 350, 900, 350],
+    "analysis_width": 960
+  },
+  {
+    "id": "jogjakota-simpang-suprapto-kst-selatan",
+    "name": "Simpang Letjen Suprapto - KS Tubun, South View",
+    "source_url": "https://cctvjss.jogjakota.go.id/atcs/ATCS_Simpang_Letjen_Suprapto_KS_Tubun_View_Selatan.stream/playlist.m3u8",
+    "count_line": [60, 350, 900, 350],
+    "analysis_width": 960
   }
 ]
